@@ -29,11 +29,11 @@ After installation, open the **Command Prompt (cmd)**.
 ```bash
 git clone https://github.com/uscssi/urban-tree-canopy.git
 cd urban-tree-canopy
-
+```
 ### 3. Create and Activate the Conda Environment
 ```bash
 conda create --n tree --file environment.yml
-
+```
 The `environment.yml` file includes all dependencies required for the U-Net segmentation toolbox:
 
 - `python=3.8`
@@ -47,12 +47,12 @@ The `environment.yml` file includes all dependencies required for the U-Net segm
 Activate the conda environment:
 ```bash
 conda activate tree
-
+```
 Execute the U-Net segmentation GUI:
 ```bash
 cd unet
 python unet_tree_canopy_model.py
-
+```
 ## 🧭 Features
 
 - Interactive GUI with tabs for **Train**, **Test**, and **Predict**
