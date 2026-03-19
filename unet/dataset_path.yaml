@@ -1,0 +1,12 @@
+batch_size: 8
+epochs: 10
+learning_rate: 0.001
+model_path: ''
+output_tif: ''
+predict_images: ''
+threshold: 0.5
+train_images: ''
+train_labels: ''
+use_aug: false
+val_images: ''
+val_labels: ''
