@@ -83,6 +83,8 @@ def predict_with_subprocess(model_path, source, img_size, conf, iou, device_num,
         f"save_conf={save_conf}",
         f"save_crop={save_crop}",
         "save=True",
+        "show_labels=False", 
+        "show_conf=False"
     ]
 
     start_time = time.time()
