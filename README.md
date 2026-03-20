@@ -42,16 +42,23 @@ cd urban-tree-canopy
 ### 3. Create and Activate the Conda Environment
 
 ```bash
-conda create --n tree --file environment.yml
+conda create -n tree python=3.10
 ```
 
-The `environment.yml` file includes all dependencies required for the U-Net segmentation toolbox:
+```bash
+conda activate tree
+```
 
-- `python=3.8`
-- `pytorch`, `torchvision`, `torchaudio`
-- `rasterio`, `albumentations`
-- `segmentation-models-pytorch`, `matplotlib`
-- `ultralytics`
+The `requirements.txt` file includes all dependencies required for the U-Net segmentation and YOLO toolboxes:
+
+- **PyTorch Stack**: `pytorch`, `torchvision`, `torchaudio` (CUDA 12.4)
+- **Geospatial & Vision**: `rasterio`, `opencv-python`, `scikit-image`
+- **Models & Augmentation**: `segmentation-models-pytorch`, `albumentations`, `ultralytics`
+- **Interactive**: `notebook`, `ipywidgets`
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
