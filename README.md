@@ -42,7 +42,7 @@ cd urban-tree-canopy
 ### 3. Create and Activate the Conda Environment
 
 ```bash
-conda create --n tree --file environment.yml
+conda create -n tree --file environment.yml
 ```
 
 The `environment.yml` file includes all dependencies required for the U-Net segmentation toolbox:
