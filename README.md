@@ -17,7 +17,7 @@ The U-Net toolbox can be run in three modes:
 
 - **GUI mode** (default) – interactive graphical interface with PyQt5
 - **Headless / CLI mode** (`--headless`) – interactive command-line interface for servers or remote sessions
-- **Jupyter notebook mode** (`--notebook` or `jupyter notebook unet_tree_canopy_notebook.ipynb`) – interactive notebook with ipywidgets buttons
+- **Jupyter notebook mode** (`dataset_download.ipynb`, `unet\unet_tree_canopy_notebook.ipynb`, `yolo\yolo_tree_canopy_notebook.ipynb`)
 
 ---
 

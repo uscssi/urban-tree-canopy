@@ -1,10 +1,10 @@
+##### python yolo_tree_canopy_model_train_autolog.py --yaml-file yolo_dataset.yaml
+
+import subprocess
+import time
 import os
 import argparse
-import time
 from datetime import datetime
-import yaml
-import torch
-from ultralytics import YOLO
 
 # Resolve project root: one level up from the yolo/ directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +14,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 DEFAULT_YAML = os.path.join(SCRIPT_DIR, "yolo_dataset.yaml")
 DEFAULT_CODE_BASE = SCRIPT_DIR
 
+
 def check_environment():
+    import torch
     print(f"PyTorch Version: {torch.__version__}")
     print(f"CUDA Available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
@@ -24,8 +26,9 @@ def check_environment():
     else:
         print("No CUDA devices available")
 
-def train_with_api(yaml_file, img_sizes, code_base_folder):
+def train_with_subprocess(yaml_file, img_sizes, code_base_folder):
     # Convert YAML path to absolute to prevent Ultralytics from prepending datasets directory
+    import yaml
     yaml_abs_path = os.path.abspath(yaml_file)
     yaml_dir = os.path.dirname(yaml_abs_path)
     
@@ -44,63 +47,82 @@ def train_with_api(yaml_file, img_sizes, code_base_folder):
 
     batch_size = 8
     learning_rate = 0.0001
+    # lf = 0.01
     optimizer = "SGD"
     model_name = "yolov8x.pt"
+    # model_name = "yolo12x.pt"
     epoch_num = 200
     device_num = "0"
+    # os.makedirs("logs", exist_ok=True)
     dataset = os.path.splitext(os.path.basename(yaml_file))[0]
 
     for image_size in img_sizes:
         name = f"{dataset}_{optimizer}_{batch_size}_{learning_rate}_{model_name}_{image_size}_{epoch_num}"
-        
+        os.makedirs(f"train_logs/{name}", exist_ok=True)
+        train_log_file = f"train_logs/{name}/{name}_train.log"
+        val_log_file = f"train_logs/{name}/{name}_val.log"
+        time_log_file = f"train_logs/{name}/{name}_execution_times.txt"
         print("=" * 72)
         print(f"Training with {yaml_file}, BatchSize={batch_size}, LearningRate={learning_rate}, ImageSize={image_size}, Model={model_name}, Name={name}")
 
+        train_command = [
+            "yolo", "detect", "train",
+            f"data={run_yaml_file}",
+            f"model={model_name}",
+            f"epochs={epoch_num}",
+            f"imgsz={image_size}",
+            f"device={device_num}",
+            f"batch={batch_size}",
+            f"name={name}",
+            f"lr0={learning_rate}",
+            # f"lrf={lf}",
+            f"optimizer={optimizer}",
+            "workers=0",
+            # "cos_lr=True",
+            # "amp=True",
+            # "val=True",
+            "plots=True",
+            # "close_mosaic=10"
+            "save_period=50",
+            # "patience=0"
+        ]
+
         start_time = time.time()
+        start_time_formatted = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        model = YOLO(model_name)
-        model.train(
-            data=run_yaml_file,
-            epochs=epoch_num,
-            imgsz=image_size,
-            device=device_num,
-            batch=batch_size,
-            name=name,
-            lr0=learning_rate,
-            optimizer=optimizer,
-            workers=0,
-            plots=True,
-            save_period=50
-        )
+        with open(train_log_file, "w") as file:
+            subprocess.run(train_command, stdout=file, stderr=subprocess.STDOUT)
 
-        print(f"Training completed for {name}.")
+        print(f"Training completed for {name}. Log saved to {train_log_file}")
 
         weights_file_path = f"{code_base_folder}/runs/detect/{name}/weights/best.pt"
-        ious = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        confs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        ious = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+        confs = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
 
-        if os.path.exists(weights_file_path):
-            val_model = YOLO(weights_file_path)
-            
-            for iou in ious:
-                for conf in confs:
-                    print(f"\n#### Validation started with iou={iou} and conf={conf} ####")
-                    val_model.val(
-                        data=run_yaml_file,
-                        split='test',
-                        imgsz=image_size,
-                        conf=conf,
-                        iou=iou,
-                        device=device_num,
-                        name=f"{name}_val",
-                        save_json=True,
-                        plots=True
-                    )
-            print(f"Validation completed for {name}.")
-        else:
-            print(f"Warning: Weights file not found at {weights_file_path}. Skipping validation.")
+        for iou in ious:
+            for conf in confs:
+                val_command = [
+                    "yolo", "val",
+                    f"split='test'",
+                    f"model={weights_file_path}",
+                    f"data={run_yaml_file}",
+                    f"imgsz={image_size}",
+                    f"conf={conf}",
+                    f"iou={iou}",
+                    f"device={device_num}",
+                    f"name={name}_val",
+                    "save_json=True",
+                    "plots=True"
+                ]
+
+                with open(val_log_file, "a") as file:
+                    file.write(f"####Validation started with iou={iou} and conf={conf}###\n\n")
+                    subprocess.run(val_command, stdout=file, stderr=subprocess.STDOUT)
+
+                print(f"Validation completed for {name}. Log saved to {val_log_file}")
 
         end_time = time.time()
+        end_time_formatted = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         elapsed_time = end_time - start_time
         hours, remainder = divmod(elapsed_time, 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -108,6 +130,8 @@ def train_with_api(yaml_file, img_sizes, code_base_folder):
         print("#" * 69)
         print(f"Execution time: {int(hours)}h {int(minutes)}m {seconds:.2f}s")
         print("#" * 69)
+        with open(time_log_file, "a") as time_log:
+            time_log.write(f"{name}: Start Time: {start_time_formatted}, End Time: {end_time_formatted}, Elapsed Time: {int(hours)}h {int(minutes)}m {seconds:.2f}s\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='YOLO Training Script with a Single YAML File')
@@ -121,4 +145,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     check_environment()
-    train_with_api(args.yaml_file, args.img_sizes, args.code_base_folder)
+    train_with_subprocess(args.yaml_file, args.img_sizes, args.code_base_folder)

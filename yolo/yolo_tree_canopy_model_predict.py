@@ -9,7 +9,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
 # Default paths
-DEFAULT_YAML = os.path.join(SCRIPT_DIR, "yolo_dataset.yaml")
 DEFAULT_CODE_BASE = SCRIPT_DIR
 DEFAULT_SOURCE = os.path.join(PROJECT_ROOT, "BH_CT_Data", "yolo_dataset", "test", "images")
 
@@ -30,18 +29,36 @@ def predict_with_subprocess(model_path, source, img_size, conf, iou, device_num,
                             save_txt, save_conf, save_crop, code_base_folder, name):
     """Run YOLO predict via subprocess, logging output to file."""
 
-    os.makedirs(os.path.join(code_base_folder, "predict_logs"), exist_ok=True)
+    # Convert paths to absolute for reliability
+    model_path = os.path.abspath(model_path).replace('\\', '/')
+    source = os.path.abspath(source).replace('\\', '/')
+
+    base_log_dir = os.path.join(code_base_folder, "predict_logs")
+    os.makedirs(base_log_dir, exist_ok=True)
+    
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     if not name:
         name = f"predict_{timestamp}"
 
-    log_dir = os.path.join(code_base_folder, "predict_logs", name)
-    os.makedirs(log_dir, exist_ok=True)
+    original_name = name
+    log_dir = os.path.join(base_log_dir, name)
+    counter = 1
+    
+    while os.path.exists(log_dir):
+        name = f"{original_name}_{counter}"
+        log_dir = os.path.join(base_log_dir, name)
+        counter += 1
+        
+    os.makedirs(log_dir)
+    # ---------------------------------------------------
+
     predict_log_file = os.path.join(log_dir, f"{name}.log")
     time_log_file = os.path.join(log_dir, f"{name}_execution_times.txt")
+    
+    yolo_result_dir = os.path.abspath(os.path.join(code_base_folder, "runs", "detect", name)).replace('\\', '/')
 
     print("=" * 72)
-    print(f"Prediction with model={model_path}")
+    print(f"Prediction started with model={model_path}")
     print(f"  source    : {source}")
     print(f"  imgsz     : {img_size}")
     print(f"  conf      : {conf}")
@@ -50,7 +67,7 @@ def predict_with_subprocess(model_path, source, img_size, conf, iou, device_num,
     print(f"  save_txt  : {save_txt}")
     print(f"  save_conf : {save_conf}")
     print(f"  save_crop : {save_crop}")
-    print(f"  name      : {name}")
+    print(f"  name      : {name}") 
     print("=" * 72)
 
     predict_command = [
@@ -79,11 +96,15 @@ def predict_with_subprocess(model_path, source, img_size, conf, iou, device_num,
     elapsed_time = end_time - start_time
     hours, remainder = divmod(elapsed_time, 3600)
     minutes, seconds = divmod(remainder, 60)
-
-    print(f"Prediction completed. Log saved to {predict_log_file}")
-    print("#" * 69)
+    clean_log_path = os.path.abspath(predict_log_file).replace('\\', '/') # f-string 밖으로 빼기!
+    
+    print("=" * 72)
+    print(f"Prediction completed for {name}.")
+    print(f"  Script Logs saved to : {clean_log_path}")
+    print(f"  YOLO Results saved to: {yolo_result_dir}")
+    print("-" * 72)
     print(f"Execution time: {int(hours)}h {int(minutes)}m {seconds:.2f}s")
-    print("#" * 69)
+    print("=" * 72)
 
     with open(time_log_file, "a") as time_log:
         time_log.write(

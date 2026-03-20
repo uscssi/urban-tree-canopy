@@ -52,11 +52,11 @@ def download_dataset():
     """Download the BH_CT_Data dataset from Zenodo."""
     url = "https://zenodo.org/records/17459767/files/BH_CT_Data.zip?download=1"
     zip_path = "BH_CT_Data.zip"
-    extract_dir = "."
+    extract_dir = "./BH_CT_Data"
 
-    if os.path.exists("BH_CT_Data"):
-        print("BH_CT_Data/ already exists, skipping dataset download.")
-        print("  (Delete BH_CT_Data/ folder to re-download.)")
+    if os.path.exists(extract_dir):
+        print(f"{extract_dir}/ already exists, skipping dataset download.")
+        print(f"  (Delete {extract_dir}/ folder to re-download.)")
         return
 
     download_file(url, zip_path, desc="BH_CT_Data.zip (dataset)")
@@ -65,25 +65,35 @@ def download_dataset():
 
 
 def download_models():
-    """Download pre-trained U-Net model examples from Google Drive."""
-    file_id = "1hWFd7PUgJ7G9tBFsMSlj6LmD_1AF1ivt"
-    zip_path = "unet_model_ex.zip"
-    extract_dir = "unet"
+    """Download pre-trained U-Net and YOLO models independently."""
+    
+    # --- U-Net Section ---
+    file_id_unet = "1hWFd7PUgJ7G9tBFsMSlj6LmD_1AF1ivt"
+    zip_path_unet = "unet_model_ex.zip"
+    extract_dir_unet = "unet"
 
-    if os.path.exists(os.path.join("unet", "train")):
+    if os.path.exists(os.path.join(extract_dir_unet, "train")):
         print("unet/train/ already exists, skipping model download.")
         print("  (Delete unet/train/ folder to re-download.)")
-        return
+    else:
+        download_gdrive(file_id_unet, zip_path_unet, desc="unet_model_ex.zip (pre-trained models)")
+        extract_zip(zip_path_unet, extract_dir_unet)
+        if os.path.exists(zip_path_unet):
+            os.remove(zip_path_unet)
+            print(f"  Removed {zip_path_unet}")
+        print("Unet Sample Model ready: unet/train/, unet/test/, unet/predict/")
 
-    download_gdrive(file_id, zip_path, desc="unet_model_ex.zip (pre-trained models)")
-    extract_zip(zip_path, extract_dir)
+    # --- YOLO Section (No return, continues even if U-Net skipped) ---
+    file_id_yolo = "175g8OV_Uc-I7-ecg3F0X5nL2r0meqLY0"
+    yolo_file_path = os.path.join("yolo", "yolo_model.pt")
 
-    # Clean up zip
-    if os.path.exists(zip_path):
-        os.remove(zip_path)
-        print(f"  Removed {zip_path}")
-
-    print("Models ready: unet/train/, unet/test/, unet/predict/")
+    if os.path.exists(yolo_file_path):
+        print(f"YOLO model already exists at: {os.path.abspath(yolo_file_path)}")
+        print("  Skipping YOLO model download.")
+    else:
+        download_gdrive(file_id_yolo, yolo_file_path, desc="yolo_model.pt")
+        print(f"YOLO model saved to: {os.path.abspath(yolo_file_path)}")
+        print("YOLO model ready: yolo/yolo_model.pt")
 
 
 if __name__ == "__main__":
@@ -93,7 +103,6 @@ if __name__ == "__main__":
     parser.add_argument("--all",     action="store_true", help="Download everything")
     args = parser.parse_args()
 
-    # If no flags, download everything
     if not (args.dataset or args.models or args.all):
         args.all = True
 

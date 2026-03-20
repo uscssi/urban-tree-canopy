@@ -25,11 +25,22 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
 BH_CT_Data/
 BH_CT_Data.zip
 unet/train
 unet/test
 unet/predict
+
+yolo/runs
+yolo/train_logs
+yolo/yolov8x.pt
+yolo/yolov8n.pt
+yolo/predict_logs
+<<<<<<< HEAD
+yolo/yolo_model.pt
+=======
+>>>>>>> a906a08 (Update for Jupyter Notebook)
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
