@@ -25,6 +25,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+BH_CT_Data/
+BH_CT_Data.zip
+unet/train
+unet/test
+unet/predict
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

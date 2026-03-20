@@ -4,6 +4,15 @@ import os
 import argparse
 from datetime import datetime
 
+# Resolve project root: one level up from the yolo/ directory
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+
+# Default paths
+DEFAULT_YAML = os.path.join(SCRIPT_DIR, "yolo_dataset.yaml")
+DEFAULT_CODE_BASE = SCRIPT_DIR
+
+
 def check_environment():
     import torch
     print(f"PyTorch Version: {torch.__version__}")
@@ -106,9 +115,12 @@ def train_with_subprocess(yaml_file, img_sizes, code_base_folder):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='YOLO Training Script with a Single YAML File')
-    parser.add_argument('--yaml-file', type=str, required=True, help='Path to a single YAML file')
-    parser.add_argument('--img-sizes', nargs='+', default=[320], type=int, help='List of image sizes for training and validation')
-    parser.add_argument('--code-base-folder', type=str, required=True, help='Path to YOLO base folder for storing runs and logs')
+    parser.add_argument('--yaml-file', type=str, default=DEFAULT_YAML,
+                        help=f'Path to a single YAML file (default: {DEFAULT_YAML})')
+    parser.add_argument('--img-sizes', nargs='+', default=[320], type=int,
+                        help='List of image sizes for training and validation')
+    parser.add_argument('--code-base-folder', type=str, default=DEFAULT_CODE_BASE,
+                        help=f'Path to YOLO base folder for storing runs and logs (default: {DEFAULT_CODE_BASE})')
     
     args = parser.parse_args()
 

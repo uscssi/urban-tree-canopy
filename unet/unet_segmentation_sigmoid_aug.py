@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys as _sys
 # -*- coding: utf-8 -*-
 """
 UNet (TIF) Training / Testing / Prediction Script - Binary Segmentation Edition
@@ -153,7 +154,8 @@ def train_one_epoch(model, loader, criterion, optimizer, device, thr):
     model.train()
     total_loss = 0.0
     agg = {'TP':0,'TN':0,'FP':0,'FN':0}
-    for imgs, lbls in loader:
+    n_batches = len(loader)
+    for i, (imgs, lbls) in enumerate(loader, 1):
         imgs, lbls = imgs.to(device), lbls.to(device)
         optimizer.zero_grad()
         logits = model(imgs)
@@ -163,6 +165,10 @@ def train_one_epoch(model, loader, criterion, optimizer, device, thr):
         preds = (torch.sigmoid(logits) > thr).long().squeeze(1)
         m = compute_metrics(preds, lbls.long())
         for k in agg: agg[k] += m[k]
+        pct = i / n_batches * 100
+        _sys.stdout.write(f'\r  [Train] {i}/{n_batches} ({pct:.0f}%) loss={loss.item():.4f}')
+        _sys.stdout.flush()
+    print()  # newline after progress
 
     P = agg['TP']/(agg['TP']+agg['FP']+1e-8)
     R = agg['TP']/(agg['TP']+agg['FN']+1e-8)
@@ -173,11 +179,12 @@ def train_one_epoch(model, loader, criterion, optimizer, device, thr):
     return avg_loss, {'precision':P,'recall':R,'f1':f1,'iou':iou,'dice':dice, **agg}
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device, thr):
+def evaluate(model, loader, criterion, device, thr, phase="Val"):
     model.eval()
     total_loss = 0.0
     agg = {'TP':0,'TN':0,'FP':0,'FN':0}
-    for imgs, lbls in loader:
+    n_batches = len(loader)
+    for i, (imgs, lbls) in enumerate(loader, 1):
         imgs, lbls = imgs.to(device), lbls.to(device)
         logits = model(imgs)
         loss   = criterion(logits, lbls.unsqueeze(1))
@@ -185,6 +192,10 @@ def evaluate(model, loader, criterion, device, thr):
         preds = (torch.sigmoid(logits) > thr).long().squeeze(1)
         m = compute_metrics(preds, lbls.long())
         for k in agg: agg[k] += m[k]
+        pct = i / n_batches * 100
+        _sys.stdout.write(f'\r  [{phase}] {i}/{n_batches} ({pct:.0f}%)')
+        _sys.stdout.flush()
+    print()  # newline after progress
 
     P = agg['TP']/(agg['TP']+agg['FP']+1e-8)
     R = agg['TP']/(agg['TP']+agg['FN']+1e-8)
@@ -266,23 +277,28 @@ def predict_mosaic(model, input_dir, output_tif, device, thr, transform=None):
 
 # --- Main ---
 def main():
+    import yaml as _yaml
+
     parser = argparse.ArgumentParser(description="UNet binary segmentation with augmentation")
     subs = parser.add_subparsers(dest="mode", required=True)
 
     def add_common_args(p):
-        p.add_argument("--threshold", type=float, default=0.5, help="sigmoid threshold")
+        p.add_argument("--config", type=str, default=None,
+                        help="Path to YAML config file (dataset_path.yaml). "
+                             "Values from YAML are used as defaults; CLI flags override.")
+        p.add_argument("--threshold", type=float, default=None, help="sigmoid threshold")
         p.add_argument("--use_aug", action="store_true", help="Use Albumentations augmentation")
 
     tr = subs.add_parser("train")
-    tr.add_argument("--train_images", required=True)
-    tr.add_argument("--train_labels", required=True)
-    tr.add_argument("--val_images",   required=True)
-    tr.add_argument("--val_labels",   required=True)
-    tr.add_argument("--test_images")
-    tr.add_argument("--test_labels")
-    tr.add_argument("--epochs",       type=int,   default=50)
-    tr.add_argument("--batch_size",   type=int,   default=4)
-    tr.add_argument("--lr",           type=float, default=1e-4)
+    tr.add_argument("--train_images", default=None)
+    tr.add_argument("--train_labels", default=None)
+    tr.add_argument("--val_images",   default=None)
+    tr.add_argument("--val_labels",   default=None)
+    tr.add_argument("--test_images",  default=None)
+    tr.add_argument("--test_labels",  default=None)
+    tr.add_argument("--epochs",       type=int,   default=None)
+    tr.add_argument("--batch_size",   type=int,   default=None)
+    tr.add_argument("--lr",           type=float, default=None)
     tr.add_argument("--scheduler_on", action="store_true")
     tr.add_argument("--encoder",      type=str,   default="resnet34")
     tr.add_argument("--weights",      type=str,   default="imagenet")
@@ -290,23 +306,69 @@ def main():
     add_common_args(tr)
 
     te = subs.add_parser("test")
-    te.add_argument("--test_images", required=True)
-    te.add_argument("--test_labels", required=True)
-    te.add_argument("--batch_size",  type=int, default=4)
-    te.add_argument("--model_path",  required=True)
+    te.add_argument("--test_images", default=None)
+    te.add_argument("--test_labels", default=None)
+    te.add_argument("--batch_size",  type=int, default=None)
+    te.add_argument("--model_path",  default=None)
     te.add_argument("--encoder",     type=str, default="resnet34")
     te.add_argument("--in_channels", type=int, default=3)
     add_common_args(te)
 
     pp = subs.add_parser("predict")
-    pp.add_argument("--predict_images", required=True)
-    pp.add_argument("--output_tif",     required=True)
-    pp.add_argument("--model_path",     required=True)
+    pp.add_argument("--predict_images", default=None)
+    pp.add_argument("--output_tif",     default=None)
+    pp.add_argument("--model_path",     default=None)
     pp.add_argument("--encoder",        type=str, default="resnet34")
     pp.add_argument("--in_channels",    type=int, default=3)
     add_common_args(pp)
 
     args = parser.parse_args()
+
+    # --- Load YAML config and use as defaults ---
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(script_dir, ".."))
+
+    config_path = args.config
+    if config_path is None:
+        # Auto-detect dataset_path.yaml in the same directory
+        default_cfg = os.path.join(script_dir, "dataset_path.yaml")
+        if os.path.exists(default_cfg):
+            config_path = default_cfg
+
+    yaml_cfg = {}
+    if config_path and os.path.exists(config_path):
+        with open(config_path) as f:
+            yaml_cfg = _yaml.safe_load(f) or {}
+        # Resolve relative paths in YAML
+        path_keys = ["train_images", "train_labels", "val_images", "val_labels",
+                      "test_images", "test_labels", "predict_images", "output_tif", "model_path"]
+        for k in path_keys:
+            v = str(yaml_cfg.get(k, ""))
+            if v and not os.path.isabs(v):
+                yaml_cfg[k] = os.path.normpath(os.path.join(project_root, v))
+        print(f"Config loaded from: {config_path}")
+
+    # Apply YAML values as defaults (CLI flags override)
+    yaml_map = {
+        "train_images": "train_images", "train_labels": "train_labels",
+        "val_images": "val_images", "val_labels": "val_labels",
+        "test_images": "test_images", "test_labels": "test_labels",
+        "predict_images": "predict_images", "output_tif": "output_tif",
+        "model_path": "model_path",
+        "learning_rate": "lr", "batch_size": "batch_size",
+        "epochs": "epochs", "threshold": "threshold",
+        "use_aug": "use_aug",
+    }
+    for yaml_key, arg_name in yaml_map.items():
+        if yaml_key in yaml_cfg and getattr(args, arg_name, None) is None:
+            setattr(args, arg_name, yaml_cfg[yaml_key])
+
+    # Final fallbacks for essential values
+    if getattr(args, "lr", None) is None: args.lr = 1e-4
+    if getattr(args, "batch_size", None) is None: args.batch_size = 4
+    if getattr(args, "epochs", None) is None: args.epochs = 50
+    if getattr(args, "threshold", None) is None: args.threshold = 0.5
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Prepare transforms based on augmentation flag
@@ -332,6 +394,9 @@ def main():
 
     # --- TRAIN MODE ---
     if args.mode == "train":
+        print("\n" + "=" * 60)
+        print("  MODE: TRAINING")
+        print("=" * 60)
         csv_dir, plots_dir = [os.path.join(root_dir, p) for p in ("csv","plots")]
         models_dir = os.path.join(root_dir, "models")
         for d in (csv_dir, plots_dir, models_dir): os.makedirs(d, exist_ok=True)
@@ -357,7 +422,7 @@ def main():
         for ep in range(1, args.epochs+1):
             print(f"\nEpoch {ep}/{args.epochs}")
             tl, tm = train_one_epoch(model, train_ld, criterion, optimizer, device, args.threshold)
-            vl, vm = evaluate(model,   val_ld,   criterion, device, args.threshold)
+            vl, vm = evaluate(model,   val_ld,   criterion, device, args.threshold, phase="Val")
             tlosses.append(tl); vlosses.append(vl)
             tmetrics.append(tm); vmetrics.append(vm)
 
@@ -366,8 +431,8 @@ def main():
                   f" P {vm['precision']:.4f} R {vm['recall']:.4f}")
 
             if test_ld:
-                tsl, tsm = evaluate(model, test_ld, criterion, device, args.threshold)
-                print(f"  Test  Loss {tsl:.4f} | Dice {tsm['dice']:.4f} IoU {	tsm['iou']:.4f}"  
+                tsl, tsm = evaluate(model, test_ld, criterion, device, args.threshold, phase="Test")
+                print(f"  Test  Loss {tsl:.4f} | Dice {tsm['dice']:.4f} IoU {tsm['iou']:.4f}"
                       f" P {tsm['precision']:.4f} R {tsm['recall']:.4f}")
 
             if vm['dice'] > best_dice:
@@ -408,18 +473,24 @@ def main():
 
     # --- TEST MODE ---
     elif args.mode == "test":
+        print("\n" + "=" * 60)
+        print("  MODE: TESTING")
+        print("=" * 60)
         test_ds = TIFDataset(args.test_images, args.test_labels, transform=test_tf)
         test_ld = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
         model = get_unet_model(args.encoder, None, False, args.in_channels).to(device)
         model.load_state_dict(torch.load(args.model_path, map_location=device))
         criterion = nn.BCEWithLogitsLoss()
-        loss, m = evaluate(model, test_ld, criterion, device, args.threshold)
+        loss, m = evaluate(model, test_ld, criterion, device, args.threshold, phase="Test")
         print(f"Test  Loss {loss:.4f} | Dice {m['dice']:.4f} IoU {m['iou']:.4f}"  
               f" P {m['precision']:.4f} R {m['recall']:.4f}")
         write_confusion_csv(os.path.join(root_dir,"confusion_test.csv"), [1], [loss], [m])
 
     # --- PREDICT MODE ---
     else:
+        print("\n" + "=" * 60)
+        print("  MODE: PREDICTION")
+        print("=" * 60)
         model = get_unet_model(args.encoder, None, False, args.in_channels).to(device)
         model.load_state_dict(torch.load(args.model_path, map_location=device))
         out_name = os.path.basename(args.output_tif)
@@ -430,5 +501,7 @@ def main():
 if __name__ == "__main__":
     import warnings
     os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
     warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+    warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
     main()

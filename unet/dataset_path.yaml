@@ -1,12 +1,28 @@
+# U-Net Segmentation Configuration
+# Paths are relative to the project root (urban-tree-canopy/)
+
+# --- Training Data ---
+train_images: 'BH_CT_Data/unet_dataset/train/images'
+train_labels: 'BH_CT_Data/unet_dataset/train/labels'
+
+# --- Validation Data ---
+val_images: 'BH_CT_Data/unet_dataset/val/images'
+val_labels: 'BH_CT_Data/unet_dataset/val/labels'
+
+# --- Test Data ---
+test_images: 'BH_CT_Data/unet_dataset/test/images'
+test_labels: 'BH_CT_Data/unet_dataset/test/labels'
+
+# --- Prediction (defaults to test data) ---
+predict_images: 'BH_CT_Data/unet_dataset/test/images'
+output_tif: 'predict_output.tif'
+
+# --- Model ---
+model_path: 'unet\train\resnet34_bs8_lr0.001\models\best_model.pt'
+
+# --- Hyperparameters ---
+learning_rate: 0.001
 batch_size: 8
 epochs: 10
-learning_rate: 0.001
-model_path: ''
-output_tif: ''
-predict_images: ''
 threshold: 0.5
-train_images: ''
-train_labels: ''
 use_aug: false
-val_images: ''
-val_labels: ''
