@@ -1,4 +1,4 @@
-# urban-tree-canopy
+# 🌳 urban-tree-canopy 🌳
 
 ## Tree Canopy Segmentation and Detection
 
@@ -8,24 +8,25 @@ This repository provides toolbox for:
    and python code for:
 2. **YOLO** – Tree object detection and canopy bounding box extraction
 
-# 🌳 U-Net Segmentation Toolbox
+# U-Net Segmentation Toolbox
 
 This repository provides a **U-Net-based segmentation toolbox** for detecting and segmenting urban tree canopies using aerial or satellite imagery.  
 The toolbox supports **GeoTIFF I/O**, **data augmentation**, and **spatially referenced outputs** for GIS applications.
 
-The U-Net toolbox can be run in two modes:
+The U-Net toolbox can be run in three modes:
 
 - **GUI mode** (default) – interactive graphical interface with PyQt5
 - **Headless / CLI mode** (`--headless`) – interactive command-line interface for servers or remote sessions
+- **Jupyter notebook mode** (`--notebook` or `jupyter notebook unet_tree_canopy_notebook.ipynb`) – interactive notebook with ipywidgets buttons
 
 ---
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 ### 1. Install Miniconda (if not installed)
 
 Download and install Miniconda from:  
-👉 [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
+ [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
 
 After installation, open the **Command Prompt (cmd)**.
 
@@ -54,7 +55,7 @@ The `environment.yml` file includes all dependencies required for the U-Net segm
 
 ---
 
-### Download Dataset & Pre-trained Models
+### 4. Download Dataset & Pre-trained Models
 
 ```bash
 # Download everything (dataset + pre-trained models)
@@ -67,9 +68,7 @@ python dataset_download.py --dataset
 python dataset_download.py --models
 ```
 
----
-
-## Default Dataset Structure
+### Default Dataset Structure
 
 The repository expects the following dataset layout under `BH_CT_Data/`:
 
@@ -98,6 +97,12 @@ BH_CT_Data/
 ```
 
 Both the U-Net and YOLO scripts automatically resolve these default paths.
+
+### Citation
+
+If you use this dataset, please cite it as:
+
+> **Yoo, J., Qi, Y., Ashe-McNally, I., MacDonald, B., & Wilson, J. P. (2025)** _Urban Tree Canopy Data for Deep Learning Applications in Boyle Heights and City Terrace, Los Angeles, California, USA_ [Data set]. Zenodo. [https://doi.org/10.5281/zenodo.17459767](https://doi.org/10.5281/zenodo.17459767)
 
 ---
 
@@ -196,11 +201,12 @@ test_images: "../BH_CT_Data/unet_dataset/test/images"
 test_labels: "../BH_CT_Data/unet_dataset/test/labels"
 
 # --- Prediction ---
-predict_images: ""
-output_tif: ""
+predict_images: "BH_CT_Data/unet_dataset/test/images"
+output_tif: "predict_output.tif"
+
 
 # --- Model ---
-model_path: ""
+model_path: "unet\train\resnet34_bs8_lr0.001\models\best_model.pt"
 
 # --- Hyperparameters ---
 learning_rate: 0.001
@@ -231,7 +237,7 @@ use_aug: false
 
 ---
 
-## 🧭 U-Net Features
+## U-Net Features
 
 - Interactive GUI with tabs for **Train**, **Test**, and **Predict**
 - **Headless CLI mode** for servers and automated pipelines
@@ -243,13 +249,14 @@ use_aug: false
 - Optional **data augmentation** (`-use_aug`)
 - Real-time progress and log display
 - YAML-based configuration (shared between GUI and CLI)
-  <img width="800" height="1108" alt="unet_ui" src="https://github.com/user-attachments/assets/c1124811-f986-4de8-9186-09f6a3c13051" />
+
+  <img width="400" height="500" alt="unet_ui" src="https://github.com/user-attachments/assets/c1124811-f986-4de8-9186-09f6a3c13051" />
 
 All training results, model checkpoints, and plots (loss, F1, precision-recall) are automatically saved in structured directories.
 
 ---
 
-## 🌲 Running the YOLO Scripts
+## Running the YOLO Scripts
 
 The YOLO scripts use a dataset configuration YAML file that defaults to `yolo/yolo_dataset.yaml`.
 
@@ -267,7 +274,7 @@ names:
 
 ---
 
-### 🏋️ Training
+### Training
 
 #### Basic (uses all defaults)
 
@@ -296,7 +303,7 @@ python yolo_tree_canopy_model_train.py \
 
 ---
 
-### 🔍 Prediction
+### Prediction
 
 #### Basic Prediction
 
