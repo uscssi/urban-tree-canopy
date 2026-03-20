@@ -60,6 +60,10 @@ The `requirements.txt` file includes all dependencies required for the U-Net seg
 pip install -r requirements.txt
 ```
 
+If the virtual environment was created incorrectly, remove it using the following command:
+```bash
+conda remove -n trees --all
+```
 ---
 
 ### 4. Download Dataset & Pre-trained Models
